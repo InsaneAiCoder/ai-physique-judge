@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" static-server.js",
     "vite:dev": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" .\\node_modules\\vite\\bin\\vite.js --host 0.0.0.0 --port 5173 --strictPort",
-    "build": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" .\\node_modules\\typescript\\lib\\tsc.js -b && call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" .\\node_modules\\vite\\bin\\vite.js build",
+    "build": "tsc -b && vite build",
     "preview": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" static-server.js",
     "server": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" server.js",
     "backend": "node server.js",

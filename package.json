@@ -1,0 +1,41 @@
+{
+  "name": "ai-physique-judge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" static-server.js",
+    "vite:dev": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" .\\node_modules\\vite\\bin\\vite.js --host 0.0.0.0 --port 5173 --strictPort",
+    "build": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" .\\node_modules\\typescript\\lib\\tsc.js -b && call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" .\\node_modules\\vite\\bin\\vite.js build",
+    "preview": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" static-server.js",
+    "server": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" server.js",
+    "backend": "node server.js",
+    "start": "call \"%USERPROFILE%\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe\" start-all.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "framer-motion": "^12.23.24",
+    "heic2any": "^0.0.4",
+    "html2canvas": "^1.4.1",
+    "lucide-react": "^0.561.0",
+    "openai": "^6.37.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "recharts": "^3.8.1",
+    "undici": "^7.25.0",
+    "vite": "^7.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
+    "typescript": "^5.9.3"
+  }
+}

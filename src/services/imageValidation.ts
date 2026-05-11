@@ -1,6 +1,6 @@
 import type { PhysiqueImageResult } from '../types';
+import { API_BASE_URL } from './apiClient';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const maxImageBytes = 8 * 1024 * 1024;
 const acceptedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 const acceptedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];

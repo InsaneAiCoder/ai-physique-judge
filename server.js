@@ -12,6 +12,7 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT || 3001);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '';
+const ALLOW_LOCAL_ORIGINS = process.env.ALLOW_LOCAL_ORIGINS !== 'false';
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const UNSUPPORTED_SOURCE_TYPES = ['image/heic', 'image/heif'];
@@ -69,6 +70,7 @@ app.get('/api/health', (req, res) => {
     openAiModel: PRIMARY_MODEL,
     proxyConfigured: !!openaiProxyUrl,
     frontendOriginConfigured: !!FRONTEND_ORIGIN,
+    localOriginsAllowed: ALLOW_LOCAL_ORIGINS,
     environment: process.env.NODE_ENV || 'development',
   });
 });
@@ -820,9 +822,13 @@ function isAllowedOrigin(origin) {
     .filter(Boolean);
 
   if (configuredOrigins.length > 0) {
-    return configuredOrigins.includes(origin);
+    return configuredOrigins.includes(origin) || (ALLOW_LOCAL_ORIGINS && isLocalDevelopmentOrigin(origin));
   }
 
+  return isLocalDevelopmentOrigin(origin);
+}
+
+function isLocalDevelopmentOrigin(origin) {
   try {
     const url = new URL(origin);
     const isLocalHost = ['localhost', '127.0.0.1'].includes(url.hostname);

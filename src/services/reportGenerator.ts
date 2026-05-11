@@ -1,6 +1,5 @@
 import type { FormData, Photos, PhysiqueImageResult, PhotoKey } from '../types';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+import { API_BASE_URL } from './apiClient';
 
 type PhotoPayload = {
   base64Image: string;

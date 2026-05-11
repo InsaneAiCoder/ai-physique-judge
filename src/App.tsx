@@ -17,6 +17,8 @@ import { UploadZone } from './components/UploadZone';
 import { translations } from './i18n';
 import type { T } from './i18n';
 import { createAiReport } from './mockReport';
+import type { BackendHealthResult } from './services/apiClient';
+import { API_BASE_URL, checkBackendHealth } from './services/apiClient';
 import { analyzePhysiqueImageFile, normalizeImageFile, previewFile } from './services/imageValidation';
 import { compressPhotosForHistory, generatePhysiqueReport } from './services/reportGenerator';
 import type { FormData, Language, Page, PhotoKey, Photos, PhysiqueImageResult, Report } from './types';
@@ -63,6 +65,8 @@ export default function App() {
   const [checkingPhotoKey, setCheckingPhotoKey] = useState<PhotoKey | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [reportLoading, setReportLoading] = useState({ progress: 0, remaining: 0, stepIndex: 0, total: 30 });
+  const [backendDiagnostic, setBackendDiagnostic] = useState<BackendHealthResult | null>(null);
+  const [isTestingBackend, setIsTestingBackend] = useState(false);
   const [reports, setReports] = useState<Report[]>(() => readReports());
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
   const t = translations[language];
@@ -146,7 +150,10 @@ export default function App() {
     } catch (error) {
       console.error('Frontend report generation error:', error);
       const code = error instanceof Error ? error.message : '';
-      if (code === 'BACKEND_UNREACHABLE') setUploadErrorMessage(t.upload.backendUnreachable);
+      if (code === 'BACKEND_UNREACHABLE') {
+        setUploadErrorMessage(t.upload.backendUnreachable);
+        runBackendDiagnostic();
+      }
       else if (code === 'MISSING_API_KEY') setUploadErrorMessage(t.upload.serverApiKeyMissing);
       else if (code === 'OPENAI_FAILED') setUploadErrorMessage(t.upload.openAiCheckFailed);
       else if (code === 'OPENAI_CONNECTION_ERROR') setUploadErrorMessage(t.upload.openAiConnectionFailed);
@@ -167,6 +174,7 @@ export default function App() {
   const handlePhotoUpload = async (photoKey: PhotoKey, file: File) => {
     setShowUploadError(false);
     setUploadErrorMessage('');
+    setBackendDiagnostic(null);
     setImageCheckResult(null);
     setImageCheckResults((current) => ({ ...current, [photoKey]: undefined }));
     setIsCheckingImage(true);
@@ -186,7 +194,10 @@ export default function App() {
       }
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
-      if (code === 'BACKEND_UNREACHABLE') setUploadErrorMessage(t.upload.backendUnreachable);
+      if (code === 'BACKEND_UNREACHABLE') {
+        setUploadErrorMessage(t.upload.backendUnreachable);
+        runBackendDiagnostic();
+      }
       else if (code === 'MISSING_API_KEY') setUploadErrorMessage(t.upload.serverApiKeyMissing);
       else if (code === 'OPENAI_FAILED') setUploadErrorMessage(t.upload.openAiCheckFailed);
       else if (code === 'INVALID_IMAGE_TYPE') setUploadErrorMessage(t.upload.fileTypeError);
@@ -204,6 +215,7 @@ export default function App() {
     setForm(emptyForm);
     setShowUploadError(false);
     setUploadErrorMessage('');
+    setBackendDiagnostic(null);
     setImageCheckResult(null);
     setImageCheckResults({});
     setIsCheckingImage(false);
@@ -211,6 +223,13 @@ export default function App() {
     setIsGeneratingReport(false);
     setActiveReportId(null);
     navigate('upload');
+  };
+
+  const runBackendDiagnostic = async () => {
+    setIsTestingBackend(true);
+    const result = await checkBackendHealth();
+    setBackendDiagnostic(result);
+    setIsTestingBackend(false);
   };
 
   return (
@@ -237,10 +256,14 @@ export default function App() {
               checkingPhotoKey={checkingPhotoKey}
               isGeneratingReport={isGeneratingReport}
               reportLoading={reportLoading}
+              backendDiagnostic={backendDiagnostic}
+              apiBaseUrl={API_BASE_URL}
+              isTestingBackend={isTestingBackend}
               onPhotoUpload={handlePhotoUpload}
               onUploadError={setUploadErrorMessage}
               onFormChange={setForm}
               onGenerate={generateReport}
+              onTestBackend={runBackendDiagnostic}
             />
           )}
           {page === 'report' && (activeReport ? <ReportPage t={t} report={activeReport} onNew={startNew} /> : <DashboardPage t={t} reports={reports} onNew={startNew} onOpen={openReport} />)}
@@ -347,10 +370,14 @@ function UploadPage({
   checkingPhotoKey,
   isGeneratingReport,
   reportLoading,
+  backendDiagnostic,
+  apiBaseUrl,
+  isTestingBackend,
   onPhotoUpload,
   onUploadError,
   onFormChange,
   onGenerate,
+  onTestBackend,
 }: {
   t: T;
   photos: Photos;
@@ -363,10 +390,14 @@ function UploadPage({
   checkingPhotoKey: PhotoKey | null;
   isGeneratingReport: boolean;
   reportLoading: { progress: number; remaining: number; stepIndex: number; total: number };
+  backendDiagnostic: BackendHealthResult | null;
+  apiBaseUrl: string;
+  isTestingBackend: boolean;
   onPhotoUpload: (photoKey: PhotoKey, file: File) => void;
   onUploadError: (message: string) => void;
   onFormChange: (form: FormData) => void;
   onGenerate: () => void;
+  onTestBackend: () => void;
 }) {
   useEffect(() => {
     const handleWindowPaste = (event: ClipboardEvent) => {
@@ -410,6 +441,14 @@ function UploadPage({
           <div className="mt-4 rounded-3xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-600">
             {uploadErrorMessage}
           </div>
+        )}
+        {(uploadErrorMessage === t.upload.backendUnreachable || backendDiagnostic) && (
+          <BackendDiagnosticCard
+            apiBaseUrl={apiBaseUrl}
+            diagnostic={backendDiagnostic}
+            isTesting={isTestingBackend}
+            onTest={onTestBackend}
+          />
         )}
         {isCheckingImage && (
           <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-premium">
@@ -467,6 +506,48 @@ function ReportLoadingCard({ t, progress, remaining, stepIndex }: { t: T; progre
         ))}
       </div>
     </motion.div>
+  );
+}
+
+function BackendDiagnosticCard({
+  apiBaseUrl,
+  diagnostic,
+  isTesting,
+  onTest,
+}: {
+  apiBaseUrl: string;
+  diagnostic: BackendHealthResult | null;
+  isTesting: boolean;
+  onTest: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="font-black text-amber-900">Backend diagnostic</p>
+          <p className="mt-2 break-all font-semibold">API URL: {apiBaseUrl || 'Missing VITE_API_BASE_URL'}</p>
+          {diagnostic && (
+            <div className="mt-2 space-y-1">
+              <p className={diagnostic.ok ? 'font-bold text-emerald-700' : 'font-bold text-red-600'}>
+                {diagnostic.ok ? 'Health check passed' : 'Health check failed'}
+              </p>
+              <p className="break-all">Checked: {diagnostic.url}</p>
+              {diagnostic.status && <p>Status: {diagnostic.status}</p>}
+              <p>{diagnostic.message}</p>
+            </div>
+          )}
+          {!diagnostic && <p className="mt-2">Tap Test backend to check if your phone can reach the API.</p>}
+        </div>
+        <button
+          type="button"
+          onClick={onTest}
+          disabled={isTesting}
+          className="rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-black text-amber-800 shadow-sm disabled:opacity-60"
+        >
+          {isTesting ? 'Testing...' : 'Test backend'}
+        </button>
+      </div>
+    </div>
   );
 }
 
